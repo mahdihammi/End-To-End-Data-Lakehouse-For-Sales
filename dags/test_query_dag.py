@@ -5,7 +5,7 @@ from airflow.providers.standard.operators.python import PythonOperator
 from datetime import datetime
 
 from include.medall_arch.gold_layer import GoldTableManager
-from include.medall_arch.silver_layer import silver_table
+from include.medall_arch.silver_layer import SilverLayerManager
 
 @dag(
     dag_id="test_query_dag",
@@ -20,17 +20,18 @@ def test_query_dag():
     def run_sql_query_silver():
         print("Starting Silver layer...")
 
+    silver_layer_manager = SilverLayerManager(
+        LOCAL_DUCKDB_CONN_ID= "my_local_duckdb_conn",
+        SCHEMA = "silver",
+        SILVER_TABLE_NAME="orders_silver"
+    )
+
     # ----------------------
     # SILVER layer task
     # ----------------------
     silver_layer = PythonOperator(
-        task_id="run_sql_silver",
-        python_callable=silver_table,
-        op_kwargs={
-            "LOCAL_DUCKDB_CONN_ID": "my_local_duckdb_conn",
-            "SILVER_TABLE_NAME": "orders_silver",
-            "mode": "overwrite",
-        },
+        task_id="silver_layer_transformation",
+        python_callable=silver_layer_manager.create_or_update_silver_table,
     )
 
     # ----------------------
