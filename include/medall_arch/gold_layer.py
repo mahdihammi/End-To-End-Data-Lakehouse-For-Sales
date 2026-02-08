@@ -6,6 +6,8 @@ from include.helpers.sql_helper import load_sql
 class GoldTableManager:
     
     def __init__(self, LOCAL_DUCKDB_CONN_ID, GOLD_SCHEMA_NAME, SILVER_SCHEMA_NAME):
+        self.my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
+        self.conn = self.my_duck_hook.get_conn()
         self.LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID
         self.GOLD_SCHEMA_NAME = GOLD_SCHEMA_NAME
         self.SILVER_SCHEMA_NAME = SILVER_SCHEMA_NAME
@@ -15,8 +17,7 @@ class GoldTableManager:
         """
         Create dim_customer table in Gold schema from silver data.
         """
-        my_duck_hook = DuckDBHook.get_hook(self.LOCAL_DUCKDB_CONN_ID)
-        conn = my_duck_hook.get_conn()
+        conn = self.conn
 
         try:
             # Load SQL query from file
@@ -41,8 +42,7 @@ class GoldTableManager:
         """
         Create dim_date table in Gold schema from silver data.
         """
-        my_duck_hook = DuckDBHook.get_hook(self.LOCAL_DUCKDB_CONN_ID)
-        conn = my_duck_hook.get_conn()
+        conn = self.conn
 
         try:
             # Load SQL query from file
@@ -67,8 +67,7 @@ class GoldTableManager:
         """
         Create dim_location table in Gold schema from silver data.
         """
-        my_duck_hook = DuckDBHook.get_hook(self.LOCAL_DUCKDB_CONN_ID)
-        conn = my_duck_hook.get_conn()
+        conn = self.conn
 
         try:
             # Load SQL query from file
@@ -93,8 +92,7 @@ class GoldTableManager:
         """
         Create dim_product table in Gold schema from silver data.
         """
-        my_duck_hook = DuckDBHook.get_hook(self.LOCAL_DUCKDB_CONN_ID)
-        conn = my_duck_hook.get_conn()
+        conn = self.conn
 
         try:
             # Load SQL query from file
@@ -120,8 +118,7 @@ class GoldTableManager:
         """
         Create dim_ship_mode table in Gold schema from silver data.
         """
-        my_duck_hook = DuckDBHook.get_hook(self.LOCAL_DUCKDB_CONN_ID)
-        conn = my_duck_hook.get_conn()
+        conn = self.conn
 
         try:
             # Load SQL query from file
@@ -147,8 +144,7 @@ class GoldTableManager:
         """
         Create fact_sales table in Gold schema from silver data.
         """
-        my_duck_hook = DuckDBHook.get_hook(self.LOCAL_DUCKDB_CONN_ID)
-        conn = my_duck_hook.get_conn()
+        conn = self.conn
 
         try:
             # Load SQL query from file
