@@ -41,6 +41,8 @@ def test_db_query():
     # Convert to DataFrame
     df = pd.DataFrame(rows, columns=columns)
 
+    print(df.shape)
+
     load_date = datetime.utcnow().strftime("%Y-%m-%d")
     object_name = f"{BRONZE_PREFIX}/load_date={load_date}/sales_{datetime.utcnow().strftime('%H%M%S')}.parquet"
 
