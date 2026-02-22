@@ -1,5 +1,7 @@
-MERGE INTO bronze.orders_bronze AS b
-USING postgres_db.orders AS s
+MERGE INTO mahdi_ducklake.bronze.orders_bronze AS b
+USING (
+  select * from read_parquet('s3://lakehouse-project/lakehouse-raw/sales/load_date=*/*.parquet')
+) AS s
 ON b.row_id = s.row_id
 
 WHEN MATCHED

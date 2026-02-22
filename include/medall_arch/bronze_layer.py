@@ -100,6 +100,3 @@ class BronzeLayerManager:
         new_ts = df["updated_at"].max().strftime("%Y-%m-%d %H:%M:%S")
         Variable.set(WATERMARK_VAR, new_ts)
         print(f"Updated watermark to {new_ts}")
-
-
-    
