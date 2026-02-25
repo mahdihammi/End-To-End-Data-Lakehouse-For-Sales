@@ -9,6 +9,9 @@ from include.helpers.helper import upload_parquet
 from dotenv import load_dotenv
 import os
 
+
+from include.helpers.sql_helper import load_sql
+
 # Load .env file
 load_dotenv()
 # ----------------------------
@@ -100,3 +103,34 @@ class BronzeLayerManager:
         new_ts = df["updated_at"].max().strftime("%Y-%m-%d %H:%M:%S")
         Variable.set(WATERMARK_VAR, new_ts)
         print(f"Updated watermark to {new_ts}")
+
+
+    def update_or_insert_bronze_table(self):
+        """
+        This method is for updating or inserting to the bronze table with a MERGE query : 
+        for idempotency
+        """
+
+        conn = self.conn
+        
+        try:
+            logging.info(f"Merge query : \n")
+
+            bronze_query = load_sql('bronze_table.sql')
+            conn.execute(bronze_query)
+            count = conn.fetchone()[0]
+
+            logging.info(f"Upsert on bronze table succeded, number of rows : {count}")
+
+        
+        except Exception as e:
+
+            logging.error(f"Error merging bronze table: {e}")
+            raise
+        finally:
+            conn.close()
+
+
+
+
+        
