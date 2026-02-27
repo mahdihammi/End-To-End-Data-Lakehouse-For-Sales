@@ -6,7 +6,7 @@ import logging
 import pandas as pd
 from sqlalchemy import create_engine
 from include.helpers.helper import upload_parquet
-from include.helpers.ducklake_init import attach_ducklake
+from include.helpers.ducklake_init import attach_ducklake_and_set_secrets
 from dotenv import load_dotenv
 import os
 
@@ -87,19 +87,16 @@ class BronzeLayerManager:
         conn = self.conn
 
 
-        attach_ducklake(
-            DBNAME,SUPABASE_HOST,SUPABASE_PORT,SUPABASE_USER,SUPABASE_PWD, conn, DUCKDB_SECRET
+        attach_ducklake_and_set_secrets(
+            DBNAME,SUPABASE_HOST,
+            SUPABASE_PORT,SUPABASE_USER,
+            SUPABASE_PWD, MINIO_ENDPOINT,
+            MINIO_ACCESS_KEY,MINIO_SECRET_KEY,
+            conn,
+            DUCKDB_SECRET
         )
         
 
-        conn.execute(f"""
-                    SET s3_endpoint='{MINIO_ENDPOINT}';
-                    SET s3_access_key_id='{MINIO_ACCESS_KEY}';
-                    SET s3_secret_access_key='{MINIO_SECRET_KEY}';
-                    SET s3_use_ssl=false;
-                    SET s3_url_style='path';
-                """)
-        
         logging.info("loading credentials successfully")
 
         try:

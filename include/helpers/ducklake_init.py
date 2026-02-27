@@ -8,7 +8,8 @@ import os
 
 
 
-def attach_ducklake(DBNAME,SUPABASE_HOST,SUPABASE_PORT,SUPABASE_USER,SUPABASE_PWD, conn, secret_name):
+def attach_ducklake_and_set_secrets(DBNAME,SUPABASE_HOST,SUPABASE_PORT,SUPABASE_USER,SUPABASE_PWD,MINIO_ENDPOINT
+                                    ,MINIO_ACCESS_KEY,MINIO_SECRET_KEY, conn, secret_name):
     """
         This function is for purpose of attaching the ducklake instance
     """
@@ -23,11 +24,10 @@ def attach_ducklake(DBNAME,SUPABASE_HOST,SUPABASE_PORT,SUPABASE_USER,SUPABASE_PW
 
         if not exists:
             conn.execute(f"""
-                    INSTALL httpfs;
-                    LOAD httpfs;
+                    
                     INSTALL ducklake ;
                     INSTALL postgres;
-
+                
                     CREATE OR REPLACE PERSISTENT SECRET(
                         TYPE postgres,
                         HOST '{SUPABASE_HOST}',
@@ -39,6 +39,19 @@ def attach_ducklake(DBNAME,SUPABASE_HOST,SUPABASE_PORT,SUPABASE_USER,SUPABASE_PW
             """)
 
             logging.info("Creating secret successfully")
+        else:
+             logging.info("secret already exist")
+
+        conn.execute(f'''
+                    INSTALL httpfs;
+                    LOAD httpfs;
+                    SET s3_endpoint='{MINIO_ENDPOINT}';
+                    SET s3_access_key_id='{MINIO_ACCESS_KEY}';
+                    SET s3_secret_access_key='{MINIO_SECRET_KEY}';
+                    SET s3_use_ssl=false;
+                    SET s3_url_style='path';
+            ''')
+
         conn.execute(
                     f"""
                     ATTACH IF NOT EXISTS 'ducklake:postgres:dbname=postgres' AS mahdi_ducklake (DATA_PATH 's3://lakehouse-project/')
