@@ -8,9 +8,45 @@ import os
 
 
 
-def attach_ducklake(SUPABASE_HOST,SUPABASE_PORT,SUPABASE_USER,SUPABASE_PWD):
+def attach_ducklake(DBNAME,SUPABASE_HOST,SUPABASE_PORT,SUPABASE_USER,SUPABASE_PWD, conn, secret_name):
     """
         This function is for purpose of attaching the ducklake instance
     """
-    pass
+
+
+    try :
+        exists = conn.execute(f"""
+            SELECT COUNT(*) 
+            FROM duckdb_secrets()
+            WHERE name = '{secret_name}'
+        """).fetchone()[0] > 0
+
+        if not exists:
+            conn.execute(f"""
+                    INSTALL httpfs;
+                    LOAD httpfs;
+                    INSTALL ducklake ;
+                    INSTALL postgres;
+
+                    CREATE OR REPLACE PERSISTENT SECRET(
+                        TYPE postgres,
+                        HOST '{SUPABASE_HOST}',
+                        PORT '{SUPABASE_PORT}',
+                        DATABASE 'postgres',
+                        USER '{SUPABASE_USER}',
+                        PASSWORD '{SUPABASE_PWD}'
+                        )
+            """)
+
+            logging.info("Creating secret successfully")
+        conn.execute(
+                    f"""
+                    ATTACH IF NOT EXISTS 'ducklake:postgres:dbname=postgres' AS mahdi_ducklake (DATA_PATH 's3://lakehouse-project/')
+                    """
+                )
+        logging.info("Success , the ducklake has been attached succesfully")
+           
+            
+    except Exception as e:
+            logging.error(f"Cannot attach the ducklake instance {e} ")
 

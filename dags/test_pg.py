@@ -31,20 +31,14 @@ def dag_pg():
     source_increment_load = PythonOperator(
             task_id = "source_increment_load",
             python_callable = bronze_layer_manager.increment_load_from_pg_to_minio
-        )
-    
-
-    initiate_ducklake = PythonOperator(
-        task_id = "initiate_ducklake",
-        python_callable = bronze_layer_manager.attach_ducklake
-    )
+        ) 
 
     bronze_layer = PythonOperator(
         task_id = "Bronze_layer",
         python_callable = bronze_layer_manager.update_or_insert_bronze_table
     )
 
-    source_increment_load >> initiate_ducklake >> bronze_layer
+    source_increment_load  >> bronze_layer
 
 dag_pg()
 

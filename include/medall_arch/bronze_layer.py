@@ -6,6 +6,7 @@ import logging
 import pandas as pd
 from sqlalchemy import create_engine
 from include.helpers.helper import upload_parquet
+from include.helpers.ducklake_init import attach_ducklake
 from dotenv import load_dotenv
 import os
 
@@ -22,12 +23,17 @@ TABLE_NAME = "orders"
 BUCKET_NAME = "lakehouse-project"
 BRONZE_PREFIX = "lakehouse-raw/sales"
 WATERMARK_VAR = "sales_last_updated_at"
+
 DBNAME = "postgres"
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "minio:9000")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 
 SUPABASE_HOST = os.getenv("SUPABASE_HOST")
 SUPABASE_PORT = os.getenv("SUPABASE_PORT")
 SUPABASE_USER = os.getenv("SUPABASE_USER")
 SUPABASE_PWD = os.getenv("SUPABASE_PWD")
+DUCKDB_SECRET = os.getenv('DUCKDB_SECRET')
 
 class BronzeLayerManager:
     def __init__(self, LOCAL_DUCKDB_CONN_ID, POSTGRES_CONN_ID, BRONZE_SCHEMA):
@@ -35,41 +41,6 @@ class BronzeLayerManager:
         self.my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
         self.conn = self.my_duck_hook.get_conn()
         self.pg_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
-
-
-    def attach_ducklake(self):
-        """
-        This fct is for attaching the ducklake when starting duckdb
-        """
-
-        conn = self.conn
-
-
-        conn.execute(f"""
-                     
-                INSTALL ducklake ;
-                INSTALL postgres;
-
-                CREATE OR REPLACE SECRET(
-                    TYPE postgres,
-                    HOST '{SUPABASE_HOST}',
-                    PORT '{SUPABASE_PORT}',
-                    DATABASE 'postgres',
-                    USER '{SUPABASE_USER}',
-                    PASSWORD '{SUPABASE_PWD}'
-                     )
-        """)
-
-        try:
-            conn.execute(
-                f"""
-                ATTACH 'ducklake:postgres:{DBNAME}=postgres' AS mahdi_ducklake(DATA_PATH 's3://lakehouse-project/')
-                """
-            )
-            logging.info("Success , the ducklake has been attached succesfully")
-        except Exception as e:
-            logging.error(f"Cannot attach the ducklake instance {e} ")
-
 
     def increment_load_from_pg_to_minio(self):
 
@@ -110,9 +81,27 @@ class BronzeLayerManager:
         This method is for updating or inserting to the bronze table with a MERGE query : 
         for idempotency
         """
-
-        conn = self.conn
         
+
+        
+        conn = self.conn
+
+
+        attach_ducklake(
+            DBNAME,SUPABASE_HOST,SUPABASE_PORT,SUPABASE_USER,SUPABASE_PWD, conn, DUCKDB_SECRET
+        )
+        
+
+        conn.execute(f"""
+                    SET s3_endpoint='{MINIO_ENDPOINT}';
+                    SET s3_access_key_id='{MINIO_ACCESS_KEY}';
+                    SET s3_secret_access_key='{MINIO_SECRET_KEY}';
+                    SET s3_use_ssl=false;
+                    SET s3_url_style='path';
+                """)
+        
+        logging.info("loading credentials successfully")
+
         try:
             logging.info(f"Merge query : \n")
 
