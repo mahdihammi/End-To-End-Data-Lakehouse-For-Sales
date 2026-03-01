@@ -7,12 +7,13 @@ import logging
 
 
 class SilverLayerManager:
-    def __init__(self, LOCAL_DUCKDB_CONN_ID, SILVER_TABLE_NAME, SCHEMA):
+    def __init__(self, LOCAL_DUCKDB_CONN_ID, SILVER_TABLE_NAME, SCHEMA, force_rebuild = False):
         self.LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID
         self.my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
         self.conn = self.my_duck_hook.get_conn()
         self.SILVER_TABLE_NAME = SILVER_TABLE_NAME
         self.SCHEMA = SCHEMA
+        self.force_rebuild = force_rebuild
 
 
     def check_silver_table_exists(self):
@@ -21,8 +22,7 @@ class SilverLayerManager:
         try:
             result = conn.execute(f"""
                 SELECT COUNT(*) 
-                FROM information_schema.tables 
-                WHERE table_schema = '{self.SCHEMA}' AND table_name = '{self.SILVER_TABLE_NAME}'
+                FROM mahdi_ducklake.silver.orders_silver
             """).fetchone()
             
             return result[0] > 0
@@ -39,22 +39,19 @@ class SilverLayerManager:
         
         """
         conn = self.conn
-        logging.info("******************************************")
-        logging.info(f"Creating silver table {self.SILVER_TABLE_NAME}")
 
-        if self.check_silver_table_exists():
+        table_exists = self.check_silver_table_exists()
 
-            query = load_sql("silver_transformation.sql")
+        if self.force_rebuild == True:
+            logging.info(f"rebuilding the silver layer ")
 
-            logging.info("Executing silver incremental MERGE")
-            print(query)
+            backfill_silver_query = load_sql('history_views/history_transformation.sql')
+            conn.execute(backfill_silver_query)
 
-            conn.execute(query)
-        else:
-            logging.info("table does not exist, backfilling data ")
-            backfill_query = load_sql("history_views/history_silver_transformation.sql")
-            logging.info("executing query backfill")
-            conn.execute(backfill_query)
+            return "Silver layer backfilled"
+        
+
+        
             
 
 

@@ -1,5 +1,4 @@
 
-CREATE OR REPLACE TABLE silver.orders_silver AS
 SELECT
         row_id,
         order_id,
@@ -57,5 +56,5 @@ SELECT
         END AS is_invalid_ship_date,
         updated_at
 
-    FROM bronze.orders_bronze b
+    FROM mahdi_ducklake.bronze.orders_bronze b
     WHERE b.order_id IS NOT NULL

@@ -82,8 +82,6 @@ class BronzeLayerManager:
         for idempotency
         """
         
-
-        
         conn = self.conn
 
 
