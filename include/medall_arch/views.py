@@ -71,7 +71,13 @@ def creating_views(LOCAL_DUCKDB_CONN_ID):
 
         conn.execute(bronze_query)
 
-        logging.info("bronze_view created")
+        logging.info("bronze view created successfully")
+
+
+        silver_query = load_sql('views/history_silver_transformation.sql')
+        conn.execute(silver_query)
+
+        logging.info('backfill silver view created successfully')
 
     except Exception as e:
 
