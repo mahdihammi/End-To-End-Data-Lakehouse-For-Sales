@@ -54,7 +54,8 @@ SELECT
             WHEN DATE_DIFF('day', order_date, ship_date) < 0 THEN TRUE
             ELSE FALSE
         END AS is_invalid_ship_date,
-        updated_at
+        updated_at,
+        load_date
 
     FROM mahdi_ducklake.bronze.orders_bronze b
     WHERE b.order_id IS NOT NULL

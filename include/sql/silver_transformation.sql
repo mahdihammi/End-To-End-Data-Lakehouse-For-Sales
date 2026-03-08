@@ -56,7 +56,8 @@ USING (
             WHEN DATE_DIFF('day', order_date, ship_date) < 0 THEN TRUE
             ELSE FALSE
         END AS is_invalid_ship_date,
-        updated_at
+        updated_at,
+        load_date
 
     FROM bronze.orders_bronze b
     WHERE b.order_id IS NOT NULL
@@ -64,6 +65,7 @@ USING (
         SELECT COALESCE(MAX(updated_at), '1900-01-01')
         FROM silver.orders_silver
     )
+    AND b.load_date > s.load_date
 
 ) AS src
 
