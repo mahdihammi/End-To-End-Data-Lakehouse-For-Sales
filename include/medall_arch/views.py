@@ -21,8 +21,6 @@ TABLE_NAME = "orders"
 BUCKET_NAME = "lakehouse-project"
 BRONZE_PREFIX = "lakehouse-raw/sales"
 WATERMARK_VAR = "sales_last_updated_at"
-DUCKLAKE_NAME = "mahdi_ducklake"
-
 DBNAME = "postgres"
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "minio:9000")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
@@ -34,57 +32,88 @@ SUPABASE_USER = os.getenv("SUPABASE_USER")
 SUPABASE_PWD = os.getenv("SUPABASE_PWD")
 DUCKDB_SECRET = os.getenv('DUCKDB_SECRET')
 
-def creating_views(LOCAL_DUCKDB_CONN_ID):
-    '''
-    fct for creating views
-    '''
-
-    LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID
-    my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
-    conn = my_duck_hook.get_conn()
-
-    try:
-
-        attach_ducklake_and_set_secrets(
-                DBNAME,SUPABASE_HOST,
-                SUPABASE_PORT,SUPABASE_USER,
-                SUPABASE_PWD, MINIO_ENDPOINT,
-                MINIO_ACCESS_KEY,MINIO_SECRET_KEY,
-                conn,
-                DUCKDB_SECRET
-            )
-        logging.info('ducklake attached successfully')
-    except Exception as e:
-
-            logging.error(f"Error Attaching ducklake: {e}")
-            raise
-
-    try:
-        bronze_query = load_sql('views/history_bronze.sql')
-
-        bronze_query = f'''
-                            CREATE VIEW IF NOT EXISTS {DUCKLAKE_NAME}.bronze.bronze_view AS \n
-
-                            {bronze_query}
-                        '''
-
-        conn.execute(bronze_query)
-
-        logging.info("bronze view created successfully")
 
 
-        silver_query = load_sql('views/history_silver_transformation.sql')
-        
-        silver_query = f'''
-                            CREATE VIEW IF NOT EXISTS {DUCKLAKE_NAME}.silver.silver_view AS \n
+class ViewsManager:
+    def __init__(self, LOCAL_DUCKDB_CONN_ID, DUCKLAKE_NAME, SILVER_TABLE_NAME, force_rebuild = False):
+        self.LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID
+        self.my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
+        self.conn = self.my_duck_hook.get_conn()
+        self.DUCKLAKE_NAME = DUCKLAKE_NAME
 
-                            {silver_query} '''
-        
-        conn.execute(silver_query)
 
-        logging.info('backfill silver view created successfully')
+    def creating_views(self, DUCKLAKE_NAME):
+            '''
+            fct for creating views
+            '''
 
-    except Exception as e:
+            conn = self.conn
 
-            logging.error(f"Error Attaching ducklake: {e}")
-            raise
+            try:
+
+                attach_ducklake_and_set_secrets(
+                        DBNAME,SUPABASE_HOST,
+                        SUPABASE_PORT,SUPABASE_USER,
+                        SUPABASE_PWD, MINIO_ENDPOINT,
+                        MINIO_ACCESS_KEY,MINIO_SECRET_KEY,
+                        self.conn,
+                        DUCKDB_SECRET
+                    )
+                logging.info('ducklake attached successfully')
+            except Exception as e:
+
+                    logging.error(f"Error Attaching ducklake: {e}")
+                    raise
+            
+
+            logging.info("Initializing lakehouse schemas: bronze, silver, gold")
+            schemas = ['bronze', 'silver', 'gold']
+
+            for schema in schemas:
+                try:
+
+                    logging.info(f"Creating schema if not exists {schema}")
+
+                    query = f"""
+                        CREATE SCHEMA IF NOT EXISTS {DUCKLAKE_NAME}.{schema};
+                    """
+
+                    conn.execute(query)
+
+                    logging.info(f"Schema {schema} created successfully")
+
+                except Exception as e:
+                    logging.error(f"Error creating schema {schema}: {e}")
+                    raise
+
+
+            try:
+
+                bronze_query = load_sql('views/history_bronze.sql')
+
+                bronze_query = f'''
+                                    CREATE VIEW IF NOT EXISTS {DUCKLAKE_NAME}.bronze.bronze_view AS \n
+
+                                    {bronze_query}
+                                '''
+
+                conn.execute(bronze_query)
+
+                logging.info("bronze view created successfully")
+
+
+                silver_query = load_sql('views/history_silver_transformation.sql')
+                
+                silver_query = f'''
+                                    CREATE VIEW IF NOT EXISTS {DUCKLAKE_NAME}.silver.silver_view AS \n
+
+                                    {silver_query} '''
+                
+                conn.execute(silver_query)
+
+                logging.info('backfill silver view created successfully')
+
+            except Exception as e:
+
+                    logging.error(f"Error Attaching ducklake: {e}")
+                    raise
