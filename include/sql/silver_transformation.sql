@@ -71,7 +71,7 @@ USING (
 
 ON tgt.row_id = src.row_id
 
-WHEN MATCHED AND src.updated_at > tgt.updated_at THEN
+WHEN MATCHED AND src.updated_at > tgt.updated_at AND src.load_date > tgt.load_date THEN
     UPDATE SET
         order_id = src.order_id,
         order_date = src.order_date,
@@ -107,6 +107,7 @@ WHEN MATCHED AND src.updated_at > tgt.updated_at THEN
         has_missing_financial_data = src.has_missing_financial_data,
         is_invalid_ship_date = src.is_invalid_ship_date,
         updated_at = src.updated_at
+        load_date = src.load_date
 
 WHEN NOT MATCHED THEN
     INSERT (
@@ -144,7 +145,8 @@ WHEN NOT MATCHED THEN
         ship_mode_priority,
         has_missing_financial_data,
         is_invalid_ship_date,
-        updated_at
+        updated_at,
+        load_date
     )
     VALUES (
         src.row_id,
@@ -182,4 +184,5 @@ WHEN NOT MATCHED THEN
         src.has_missing_financial_data,
         src.is_invalid_ship_date,
         src.updated_at
+        src.load_date
     );
