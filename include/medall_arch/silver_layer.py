@@ -27,20 +27,21 @@ DUCKDB_SECRET = os.getenv('DUCKDB_SECRET')
 
 
 class SilverLayerManager:
-    def __init__(self, LOCAL_DUCKDB_CONN_ID, SILVER_TABLE_NAME, SCHEMA, force_rebuild = False):
+    def __init__(self, LOCAL_DUCKDB_CONN_ID, SILVER_TABLE_NAME,DUCKLAKE_NAME, SCHEMA, force_rebuild = False):
         self.LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID
         self.my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
         self.conn = self.my_duck_hook.get_conn()
         self.SILVER_TABLE_NAME = SILVER_TABLE_NAME
         self.SCHEMA = SCHEMA
         self.force_rebuild = force_rebuild
+        self.DUCKLAKE_NAME = DUCKLAKE_NAME
 
 
     def check_silver_table_exists(self, conn):
         try:
             result = conn.execute(f"""
                 SELECT COUNT(*) 
-                FROM mahdi_ducklake.silver.{self.SILVER_TABLE_NAME}
+                FROM {self.DUCKLAKE_NAME}.{self.SCHEMA}.{self.SILVER_TABLE_NAME}
             """).fetchone()
             
             return result[0] > 0
