@@ -5,6 +5,7 @@ from airflow.providers.standard.operators.python import PythonOperator
 
 from datetime import datetime
 from include.medall_arch.bronze_layer import BronzeLayerManager
+from include.medall_arch.silver_layer import SilverLayerManager
 
 import os
 LOCAL_DUCKDB_CONN_ID = os.environ.get('LOCAL_DUCKDB_CONN_ID')
@@ -17,6 +18,9 @@ bronze_layer_manager = BronzeLayerManager(
     BRONZE_SCHEMA = 'bronze'
 )
 
+silver_layer_manager = SilverLayerManager(
+    LOCAL_DUCKDB_CONN_ID= LOCAL_DUCKDB_CONN_ID,
+)
 
 @dag(
     dag_id="test_pg",
