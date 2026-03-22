@@ -15,7 +15,7 @@ SELECT
         segment,
         country,
         city,
-        state,
+        governorate,
         postal_code,
         region,
         product_id,

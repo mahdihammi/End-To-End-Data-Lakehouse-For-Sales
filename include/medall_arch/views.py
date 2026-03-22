@@ -89,29 +89,28 @@ class ViewsManager:
 
             try:
 
-                bronze_query = load_sql('views/history_bronze.sql')
+                history_bronze_query = load_sql('views/history_bronze.sql')
 
-                bronze_query = f'''
-                                    CREATE VIEW IF NOT EXISTS {self.DUCKLAKE_NAME}.bronze.bronze_view AS \n
+                history_bronze_query = f'''
+                                    CREATE OR REPLACE VIEW {self.DUCKLAKE_NAME}.bronze.history_bronze_view AS \n
 
-                                    {bronze_query}
+                                    {history_bronze_query}
                                 '''
 
-                conn.execute(bronze_query)
+                conn.execute(history_bronze_query)
+                logging.info("history bronze view created successfully")
 
-                logging.info("bronze view created successfully")
-
-
-                silver_query = load_sql('views/history_silver_transformation.sql')
+                history_silver_query = load_sql('views/history_silver_transformation.sql')
                 
-                silver_query = f'''
-                                    CREATE VIEW IF NOT EXISTS {self.DUCKLAKE_NAME}.silver.silver_view AS \n
+                history_silver_query = f'''
+                                    CREATE OR REPLACE VIEW {self.DUCKLAKE_NAME}.silver.history_silver_view AS \n
 
-                                    {silver_query} '''
+                                    {history_silver_query} '''
                 
-                conn.execute(silver_query)
+                conn.execute(history_silver_query)
 
                 logging.info('backfill silver view created successfully')
+
 
             except Exception as e:
 

@@ -22,7 +22,7 @@ views_manager = ViewsManager(
 
 
 @dag(
-    dag_id="view_dag_test",
+    dag_id="views_creation_dag",
     start_date=datetime(2023, 1, 1),
     schedule=None,
     catchup=False,
