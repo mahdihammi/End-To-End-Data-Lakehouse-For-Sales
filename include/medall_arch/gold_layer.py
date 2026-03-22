@@ -13,5 +13,18 @@ class GoldTableManager:
         self.SILVER_SCHEMA_NAME = SILVER_SCHEMA_NAME
 
     
-    pass
+    def create_customer_360_table(self):
+        pass
+
+    def create_monthly_trend_table(self):
+        pass
+
+    def create_product_performance_table(self):
+        pass
+
+    def create_sales_performance_table(self):
+        pass
+
+    def create_regional_performance_table(self):
+        pass
         
