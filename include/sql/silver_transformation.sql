@@ -1,4 +1,4 @@
-MERGE INTO silver.orders_silver AS tgt
+MERGE INTO mahdi_ducklake.silver.orders_silver AS tgt
 USING (
 
     SELECT
@@ -59,13 +59,16 @@ USING (
         updated_at,
         load_date
 
-    FROM bronze.orders_bronze b
+    FROM mahdi_ducklake.bronze.orders_bronze b
     WHERE b.order_id IS NOT NULL
     AND b.updated_at >= (
         SELECT COALESCE(MAX(updated_at), '1900-01-01')
-        FROM silver.orders_silver
+        FROM mahdi_ducklake.silver.orders_silver s
     )
-    AND b.load_date > s.load_date
+  AND b.load_date > (
+      SELECT COALESCE(MAX(load_date), '1900-01-01')
+      FROM mahdi_ducklake.silver.orders_silver
+  )
 
 ) AS src
 
@@ -106,7 +109,7 @@ WHEN MATCHED AND src.updated_at > tgt.updated_at AND src.load_date > tgt.load_da
         ship_mode_priority = src.ship_mode_priority,
         has_missing_financial_data = src.has_missing_financial_data,
         is_invalid_ship_date = src.is_invalid_ship_date,
-        updated_at = src.updated_at
+        updated_at = src.updated_at,
         load_date = src.load_date
 
 WHEN NOT MATCHED THEN
@@ -183,6 +186,6 @@ WHEN NOT MATCHED THEN
         src.ship_mode_priority,
         src.has_missing_financial_data,
         src.is_invalid_ship_date,
-        src.updated_at
+        src.updated_at,
         src.load_date
     );

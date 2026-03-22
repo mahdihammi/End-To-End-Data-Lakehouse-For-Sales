@@ -88,9 +88,11 @@ class SilverLayerManager:
 
                 query = load_sql('silver_transformation.sql')
 
-                result = conn.execute(query)
+                conn.execute(query)
 
-                logging.info(f"{result.rowcount} records affected by MERGE")
+                count = conn.fetchone()[0]
+
+                logging.info(f" {count} records affected by MERGE")
 
             else:
                 logging.info(f"table {self.SILVER_TABLE_NAME} doesn't exist, recreating it ")
