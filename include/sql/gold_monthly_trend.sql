@@ -1,4 +1,4 @@
-MERGE INTO mahdi_ducklake.gold.monthly_trend AS tgt
+MERGE INTO mahdi_ducklake.gold.monthly_trend_gold_table AS tgt
 USING (
     SELECT
         order_year,

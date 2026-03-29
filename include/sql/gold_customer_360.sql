@@ -1,4 +1,4 @@
-MERGE INTO mahdi_ducklake.gold.customer_360 AS tgt
+MERGE INTO mahdi_ducklake.gold.customer_360_gold_table AS tgt
 USING (
     SELECT
         customer_id,

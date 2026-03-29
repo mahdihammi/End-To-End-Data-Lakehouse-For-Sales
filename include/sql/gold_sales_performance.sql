@@ -1,4 +1,4 @@
-MERGE INTO mahdi_ducklake.gold.sales_performance AS tgt
+MERGE INTO mahdi_ducklake.gold.sales_performance_gold_table AS tgt
 USING (
     SELECT
         order_year,

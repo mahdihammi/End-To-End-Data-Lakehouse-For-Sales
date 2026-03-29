@@ -1,4 +1,4 @@
-MERGE INTO mahdi_ducklake.gold.regional_performance AS tgt
+MERGE INTO mahdi_ducklake.gold.regional_performance_gold_table AS tgt
 USING (
     SELECT
         region,
