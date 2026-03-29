@@ -6,6 +6,7 @@ from airflow.providers.standard.operators.python import PythonOperator
 from datetime import datetime
 from include.medall_arch.bronze_layer import BronzeLayerManager
 from include.medall_arch.silver_layer import SilverLayerManager
+from include.medall_arch.gold_layer import GoldTableManager
 from dotenv import load_dotenv
 import os
 import logging
@@ -29,6 +30,13 @@ silver_layer_manager = SilverLayerManager(
     SILVER_TABLE_NAME = SILVER_TABLE_NAME,
     DUCKLAKE_NAME = DUCKLAKE_NAME,
     SCHEMA = "silver",
+
+)
+
+gold_table_manager = GoldTableManager(
+    LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID,
+    GOLD_SCHEMA_NAME = 'gold',
+    DUCKLAKE_NAME = DUCKLAKE_NAME,
 
 )
 
@@ -57,7 +65,21 @@ def dag_pg():
         python_callable = silver_layer_manager.create_or_update_silver_table
     )
 
-    source_increment_load  >> bronze_layer >> silver_layer
+    with TaskGroup(group_id='Gold_Layer_Manager') as gold_layer:
+        create_customer_360_table = PythonOperator(
+            task_id = 'create_customer_360_gold_table',
+            python_callable = gold_table_manager.create_customer_360_table,
+            op_kwargs={'table_name': 'customer_360_gold_table'}
+        )
+
+        create_monthly_trend_table = PythonOperator(
+            task_id = 'create_monthly_trend_gold_table',
+            python_callable = gold_table_manager.create_monthly_trend_table,
+            op_kwargs={'table_name': 'monthly_trend_gold_table'}
+        )
+        create_customer_360_table >> create_monthly_trend_table
+
+    source_increment_load  >> bronze_layer >> silver_layer >> gold_layer
 
     
 
