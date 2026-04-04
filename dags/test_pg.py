@@ -77,7 +77,27 @@ def dag_pg():
             python_callable = gold_table_manager.create_monthly_trend_table,
             op_kwargs={'table_name': 'monthly_trend_gold_table'}
         )
-        create_customer_360_table >> create_monthly_trend_table
+
+        create_product_performance_table = PythonOperator(
+            task_id = "create_product_performance_gold_table",
+            python_callable = gold_table_manager.create_product_performance_table,
+            op_kwargs={'table_name': 'product_performance_gold_table'}
+        )
+
+        create_sales_performance_table = PythonOperator(
+            task_id = "create_sales_performance_gold_table",
+            python_callable = gold_table_manager.create_sales_performance_table,
+            op_kwargs={'table_name': 'sales_performance_gold_table'}
+        )
+
+        create_regional_performance_table = PythonOperator(
+            task_id = "create_regional_performance_gold_table",
+            python_callable = gold_table_manager.create_regional_performance_table,
+            op_kwargs={'table_name': 'regional_performance_gold_table'}
+        )
+
+
+        create_customer_360_table >> create_monthly_trend_table >> create_product_performance_table >> create_sales_performance_table >> create_regional_performance_table
 
     source_increment_load  >> bronze_layer >> silver_layer >> gold_layer
 
