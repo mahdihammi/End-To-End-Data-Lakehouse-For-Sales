@@ -4,7 +4,7 @@ import pandas as pd
 from duckdb_provider.hooks.duckdb_hook import DuckDBHook
 from include.helpers.sql_helper import load_sql
 from include.helpers.ducklake_init import attach_ducklake_and_set_secrets
-
+from include.medall_arch.base import BaseLayerManager
 from dotenv import load_dotenv
 
 import logging
@@ -13,27 +13,11 @@ import os
 load_dotenv()
 
 
-DBNAME = "postgres"
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "minio:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
-
-SUPABASE_HOST = os.getenv("SUPABASE_HOST")
-SUPABASE_PORT = os.getenv("SUPABASE_PORT")
-SUPABASE_USER = os.getenv("SUPABASE_USER")
-SUPABASE_PWD = os.getenv("SUPABASE_PWD")
-DUCKDB_SECRET = os.getenv('DUCKDB_SECRET')
-
-
-
-class SilverLayerManager:
-    def __init__(self, LOCAL_DUCKDB_CONN_ID, SILVER_TABLE_NAME,DUCKLAKE_NAME, SCHEMA, force_rebuild = False):
-        self.LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID
-        self.my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
-        self.conn = self.my_duck_hook.get_conn()
+class SilverLayerManager(BaseLayerManager):
+    def __init__(self, LOCAL_DUCKDB_CONN_ID, SILVER_TABLE_NAME,DUCKLAKE_NAME, SCHEMA):
+        super().__init__(LOCAL_DUCKDB_CONN_ID)
         self.SILVER_TABLE_NAME = SILVER_TABLE_NAME
         self.SCHEMA = SCHEMA
-        self.force_rebuild = force_rebuild
         self.DUCKLAKE_NAME = DUCKLAKE_NAME
 
 
@@ -59,14 +43,7 @@ class SilverLayerManager:
         """
         conn = self.conn
 
-        attach_ducklake_and_set_secrets(
-            DBNAME,SUPABASE_HOST,
-            SUPABASE_PORT,SUPABASE_USER,
-            SUPABASE_PWD, MINIO_ENDPOINT,
-            MINIO_ACCESS_KEY,MINIO_SECRET_KEY,
-            conn,
-            DUCKDB_SECRET
-        )
+        self.attach_ducklake()
 
         table_exists = self.check_silver_table_exists(conn)
 

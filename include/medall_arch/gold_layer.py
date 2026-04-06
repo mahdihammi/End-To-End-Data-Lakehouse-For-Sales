@@ -3,40 +3,22 @@ import logging
 from duckdb_provider.hooks.duckdb_hook import DuckDBHook
 from include.helpers.sql_helper import load_sql
 from include.helpers.ducklake_init import attach_ducklake_and_set_secrets
+from include.medall_arch.base import BaseLayerManager
 import os
 
-DBNAME = "postgres"
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "minio:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
-
-SUPABASE_HOST = os.getenv("SUPABASE_HOST")
-SUPABASE_PORT = os.getenv("SUPABASE_PORT")
-SUPABASE_USER = os.getenv("SUPABASE_USER")
-SUPABASE_PWD = os.getenv("SUPABASE_PWD")
-DUCKDB_SECRET = os.getenv('DUCKDB_SECRET')
 
 
-class GoldTableManager:
+class GoldTableManager(BaseLayerManager):
     
     def __init__(self, LOCAL_DUCKDB_CONN_ID, GOLD_SCHEMA_NAME, DUCKLAKE_NAME):
-        self.my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
-        self.conn = self.my_duck_hook.get_conn()
-        self.LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID
+        super().__init__(LOCAL_DUCKDB_CONN_ID)
         self.GOLD_SCHEMA_NAME = GOLD_SCHEMA_NAME
         self.DUCKLAKE_NAME = DUCKLAKE_NAME
 
 
     def check_table_exists(self, table_name):
         conn = self.conn
-        attach_ducklake_and_set_secrets(
-            DBNAME, SUPABASE_HOST,
-            SUPABASE_PORT, SUPABASE_USER,
-            SUPABASE_PWD, MINIO_ENDPOINT,
-            MINIO_ACCESS_KEY, MINIO_SECRET_KEY,
-            conn,
-            DUCKDB_SECRET
-        )
+        self.attach_ducklake()
 
         try:
             result = conn.execute(f"""

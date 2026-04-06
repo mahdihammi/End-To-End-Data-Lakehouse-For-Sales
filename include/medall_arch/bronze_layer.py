@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from include.helpers.helper import upload_parquet
 from include.helpers.ducklake_init import attach_ducklake_and_set_secrets
 from dotenv import load_dotenv
+from include.medall_arch.base import BaseLayerManager
 import os
 
 
@@ -24,22 +25,9 @@ BUCKET_NAME = "lakehouse-project"
 BRONZE_PREFIX = "lakehouse-raw/sales"
 WATERMARK_VAR = "sales_last_updated_at"
 
-DBNAME = "postgres"
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "minio:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
-
-SUPABASE_HOST = os.getenv("SUPABASE_HOST")
-SUPABASE_PORT = os.getenv("SUPABASE_PORT")
-SUPABASE_USER = os.getenv("SUPABASE_USER")
-SUPABASE_PWD = os.getenv("SUPABASE_PWD")
-DUCKDB_SECRET = os.getenv('DUCKDB_SECRET')
-
-class BronzeLayerManager:
+class BronzeLayerManager(BaseLayerManager):
     def __init__(self, LOCAL_DUCKDB_CONN_ID, POSTGRES_CONN_ID, BRONZE_SCHEMA):
-        self.LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID
-        self.my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
-        self.conn = self.my_duck_hook.get_conn()
+        super().__init__(LOCAL_DUCKDB_CONN_ID)
         self.pg_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
 
     def increment_load_from_pg_to_minio(self):
@@ -84,16 +72,7 @@ class BronzeLayerManager:
         
         conn = self.conn
 
-
-        attach_ducklake_and_set_secrets(
-            DBNAME,SUPABASE_HOST,
-            SUPABASE_PORT,SUPABASE_USER,
-            SUPABASE_PWD, MINIO_ENDPOINT,
-            MINIO_ACCESS_KEY,MINIO_SECRET_KEY,
-            conn,
-            DUCKDB_SECRET
-        )
-        
+        self.attach_ducklake()
 
         logging.info("loading credentials successfully")
 
