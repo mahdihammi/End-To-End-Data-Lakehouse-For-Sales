@@ -1,3 +1,3 @@
 # Project Architecture Overview
 
-![Diagram](docs\image.png)
+![Diagram](docs/image.png)
