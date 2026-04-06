@@ -41,7 +41,7 @@ gold_table_manager = GoldTableManager(
 )
 
 @dag(
-    dag_id="test_pg",
+    dag_id="pipeline_dag",
     start_date=datetime(2023, 1, 1),
     schedule=None,
     catchup=False,
