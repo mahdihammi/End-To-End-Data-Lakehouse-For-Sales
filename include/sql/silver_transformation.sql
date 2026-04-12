@@ -61,20 +61,16 @@ USING (
 
     FROM mahdi_ducklake.bronze.orders_bronze b
     WHERE b.order_id IS NOT NULL
-    AND b.updated_at >= (
-        SELECT COALESCE(MAX(updated_at), '1900-01-01')
-        FROM mahdi_ducklake.silver.orders_silver s
+    AND b.load_date > (
+        SELECT COALESCE(MAX(load_date), '1900-01-01')
+        FROM mahdi_ducklake.silver.orders_silver
     )
-  AND b.load_date > (
-      SELECT COALESCE(MAX(load_date), '1900-01-01')
-      FROM mahdi_ducklake.silver.orders_silver
-  )
 
 ) AS src
 
 ON tgt.row_id = src.row_id
 
-WHEN MATCHED AND src.updated_at > tgt.updated_at AND src.load_date > tgt.load_date THEN
+WHEN MATCHED AND src.updated_at > tgt.updated_at THEN
     UPDATE SET
         order_id = src.order_id,
         order_date = src.order_date,

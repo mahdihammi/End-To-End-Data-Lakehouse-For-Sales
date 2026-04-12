@@ -64,8 +64,10 @@ class SilverLayerManager(BaseLayerManager):
 
         query = load_sql('silver_transformation.sql')
         conn.execute(query)
+        count = conn.fetchone()[0]
 
         logging.info(f"MERGE complete on {self.full_table_name}")
+        logging.info(f"Upsert on silver table succeded, number of rows : {count}")
 
     def create_or_update_silver_table(self):
         """
