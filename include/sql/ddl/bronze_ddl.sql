@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS mahdi_ducklake.bronze.orders_bronze (
+CREATE TABLE IF NOT EXISTS {full_table_name} (
     row_id          UUID,
     order_id        UUID,
     order_date      TIMESTAMP,
@@ -20,5 +20,9 @@ CREATE TABLE IF NOT EXISTS mahdi_ducklake.bronze.orders_bronze (
     quantity        SMALLINT,
     discount        NUMERIC(4, 2),
     profit          NUMERIC(10, 2),
-    updated_at      TIMESTAMP
+    updated_at      TIMESTAMP,
+    load_date       DATE
 );
+
+ALTER TABLE {full_table_name}
+SET PARTITIONED BY (load_date);
