@@ -1,167 +1,174 @@
 from datetime import datetime
+import logging
 from duckdb_provider.hooks.duckdb_hook import DuckDBHook
 from include.helpers.sql_helper import load_sql
+from include.helpers.ducklake_init import attach_ducklake_and_set_secrets
+from include.medall_arch.base import BaseLayerManager
+import os
 
 
-class GoldTableManager:
+
+class GoldTableManager(BaseLayerManager):
     
-    def __init__(self, LOCAL_DUCKDB_CONN_ID, GOLD_SCHEMA_NAME, SILVER_SCHEMA_NAME):
-        self.my_duck_hook = DuckDBHook.get_hook(LOCAL_DUCKDB_CONN_ID)
-        self.conn = self.my_duck_hook.get_conn()
-        self.LOCAL_DUCKDB_CONN_ID = LOCAL_DUCKDB_CONN_ID
+    def __init__(self, LOCAL_DUCKDB_CONN_ID, GOLD_SCHEMA_NAME, DUCKLAKE_NAME):
+        super().__init__(LOCAL_DUCKDB_CONN_ID)
         self.GOLD_SCHEMA_NAME = GOLD_SCHEMA_NAME
-        self.SILVER_SCHEMA_NAME = SILVER_SCHEMA_NAME
+        self.DUCKLAKE_NAME = DUCKLAKE_NAME
+
+
+    def check_table_exists(self, table_name):
+        conn = self.conn
+        self.attach_ducklake()
+
+        try:
+            result = conn.execute(f"""
+                SELECT COUNT(*) 
+                FROM {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name}
+            """).fetchone()
+            
+            return result[0] > 0
+        except Exception as e:
+            print(f"Error checking table existence: {e}")
+            return False
 
     
-    def create_dim_customer(self):
-        """
-        Create dim_customer table in Gold schema from silver data.
-        """
+    def create_customer_360_table(self, table_name):
         conn = self.conn
-
+        result = self.check_table_exists(table_name)
         try:
-            # Load SQL query from file
-            sql_query = load_sql("dim_customer.sql")
+            if result:
+                logging.info(f'MERGING into {table_name} ...')
+                query = load_sql('gold_customer_360.sql')
+                conn.execute(query)
 
-            # Execute the SQL to create the dim_customer table
-            conn.execute(sql_query)
+                count = conn.fetchone()[0]
 
-            print("✅ dim_customer table created successfully in Gold schema.")
+                logging.info(f" {count} records affected by MERGE")
+            else:
+                logging.info(f"table {table_name} doesn't exist, recreating it ")
+                history_query = load_sql('views/history_gold_customer_360.sql')
+                history_query = f'''
+                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
 
-            conn.execute("SELECT COUNT(*) FROM gold.dim_customer")
-            count = conn.fetchone()[0]
-            print(f"   Records in dim_customer: {count:,}")
+                        {history_query}
+                        '''
+                conn.execute(history_query)
+                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
+
 
         except Exception as e:
-            print(f"❌ Error creating dim_customer table: {e}")
+
+            logging.error(f"Error merging {table_name} table: {e}")
             raise
-        finally:
-            conn.close()
 
-    def create_dim_date(self):
-        """
-        Create dim_date table in Gold schema from silver data.
-        """
+
+    def create_monthly_trend_table(self, table_name):
         conn = self.conn
-
+        result = self.check_table_exists(table_name)
         try:
-            # Load SQL query from file
-            sql_query = load_sql("dim_date.sql")
+            if result:
+                logging.info(f'MERGING into {table_name} ...')
+                query = load_sql('gold_monthly_trend.sql')
+                conn.execute(query)
 
-            # Execute the SQL to create the dim_date table
-            conn.execute(sql_query)
+                count = conn.fetchone()[0]
 
-            print("✅ dim_date table created successfully in Gold schema.")
+                logging.info(f" {count} records affected by MERGE")
+            else:
+                logging.info(f"table {table_name} doesn't exist, recreating it ")
+                history_query = load_sql('views/history_gold_monthly_trend.sql')
+                history_query = f'''
+                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
 
-            conn.execute("SELECT COUNT(*) FROM gold.dim_date")
-            count = conn.fetchone()[0]
-            print(f"   Records in dim_date: {count:,}")
+                        {history_query}
+                        '''
+                conn.execute(history_query)
+                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
+
 
         except Exception as e:
-            print(f"❌ Error creating dim_date table: {e}")
-            raise
-        finally:
-            conn.close()
 
-    def create_dim_location(self):
-        """
-        Create dim_location table in Gold schema from silver data.
-        """
+            logging.error(f"Error merging {table_name} table: {e}")
+            raise
+
+    def create_product_performance_table(self, table_name):
         conn = self.conn
-
+        result = self.check_table_exists(table_name)
         try:
-            # Load SQL query from file
-            sql_query = load_sql("dim_location.sql")
+            if result:
+                logging.info(f'MERGING into {table_name} ...')
+                query = load_sql('gold_product_performance.sql')
+                conn.execute(query)
 
-            # Execute the SQL to create the dim_location table
-            conn.execute(sql_query)
+                count = conn.fetchone()[0]
 
-            print("✅ dim_location table created successfully in Gold schema.")
+                logging.info(f" {count} records affected by MERGE")
+            else:
+                logging.info(f"table {table_name} doesn't exist, recreating it ")
+                history_query = load_sql('views/history_gold_product_performance.sql')
+                history_query = f'''
+                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
 
-            conn.execute("SELECT COUNT(*) FROM gold.dim_location")
-            count = conn.fetchone()[0]
-            print(f"   Records in dim_location: {count:,}")
-
+                        {history_query}
+                        '''
+                conn.execute(history_query)
+                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
         except Exception as e:
-            print(f"❌ Error creating dim_location table: {e}")
-            raise
-        finally:
-            conn.close()
 
-    def create_dim_product(self):
-        """
-        Create dim_product table in Gold schema from silver data.
-        """
+            logging.error(f"Error merging {table_name} table: {e}")
+            raise
+
+    def create_sales_performance_table(self, table_name):
         conn = self.conn
-
+        result = self.check_table_exists(table_name)
         try:
-            # Load SQL query from file
-            sql_query = load_sql("dim_product.sql")
+            if result:
+                logging.info(f'MERGING into {table_name} ...')
+                query = load_sql('gold_sales_performance.sql')
+                conn.execute(query)
 
-            # Execute the SQL to create the dim_product table
-            conn.execute(sql_query)
+                count = conn.fetchone()[0]
 
-            print("✅ dim_product table created successfully in Gold schema.")
+                logging.info(f" {count} records affected by MERGE")
+            else:
+                logging.info(f"table {table_name} doesn't exist, recreating it ")
+                history_query = load_sql('views/history_gold_sales_performance.sql')
+                history_query = f'''
+                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
 
-            conn.execute("SELECT COUNT(*) FROM gold.dim_product")
-            count = conn.fetchone()[0]
-            print(f"   Records in dim_product: {count:,}")
-
+                        {history_query}
+                        '''
+                conn.execute(history_query)
+                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
         except Exception as e:
-            print(f"❌ Error creating dim_product table: {e}")
+
+            logging.error(f"Error merging {table_name} table: {e}")
             raise
-        finally:
-            conn.close()
 
-
-    def create_dim_ship_mode(self):
-        """
-        Create dim_ship_mode table in Gold schema from silver data.
-        """
+    def create_regional_performance_table(self, table_name):
         conn = self.conn
-
+        result = self.check_table_exists(table_name)
         try:
-            # Load SQL query from file
-            sql_query = load_sql("dim_ship_mode.sql")
+            if result:
+                logging.info(f'MERGING into {table_name} ...')
+                query = load_sql('gold_regional_performance.sql')
+                conn.execute(query)
 
-            # Execute the SQL to create the dim_ship_mode table
-            conn.execute(sql_query)
+                count = conn.fetchone()[0]
 
-            print("✅ dim_ship_mode table created successfully in Gold schema.")
+                logging.info(f" {count} records affected by MERGE")
+            else:
+                logging.info(f"table {table_name} doesn't exist, recreating it ")
+                history_query = load_sql('views/history_gold_regional_performance.sql')
+                history_query = f'''
+                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
 
-            conn.execute("SELECT COUNT(*) FROM gold.dim_ship_mode")
-            count = conn.fetchone()[0]
-            print(f"   Records in dim_ship_mode: {count:,}")
-
+                        {history_query}
+                        '''
+                conn.execute(history_query)
+                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
         except Exception as e:
-            print(f"❌ Error creating dim_ship_mode table: {e}")
+
+            logging.error(f"Error merging {table_name} table: {e}")
             raise
-        finally:
-            conn.close()
-
-
-    def create_fact_sales(self):
-        """
-        Create fact_sales table in Gold schema from silver data.
-        """
-        conn = self.conn
-
-        try:
-            # Load SQL query from file
-            sql_query = load_sql("fact_sales.sql")
-
-            # Execute the SQL to create the fact_sales table
-            conn.execute(sql_query)
-
-            print("✅ fact_sales table created successfully in Gold schema.")
-
-            conn.execute("SELECT COUNT(*) FROM gold.fact_sales")
-            count = conn.fetchone()[0]
-            print(f"   Records in fact_sales: {count:,}")
-
-        except Exception as e:
-            print(f"❌ Error creating fact_sales table: {e}")
-            raise
-        finally:
-            conn.close()
         
