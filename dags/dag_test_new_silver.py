@@ -20,29 +20,6 @@ BRONZE_TABLE_NAME = "orders_bronze"
 DUCKLAKE_NAME = os.getenv('DUCKLAKE_NAME')
 
 
-bronze_layer_manager = BronzeLayerManager(
-    LOCAL_DUCKDB_CONN_ID= LOCAL_DUCKDB_CONN_ID,
-    POSTGRES_CONN_ID = POSTGRES_CONN_ID,
-    DUCKLAKE_NAME=DUCKLAKE_NAME,
-    BRONZE_SCHEMA = 'bronze',
-    BRONZE_TABLE_NAME = BRONZE_TABLE_NAME
-    
-)
-
-
-silver_layer_manager = SilverLayerManager(
-    LOCAL_DUCKDB_CONN_ID= LOCAL_DUCKDB_CONN_ID,
-    SILVER_TABLE_NAME = SILVER_TABLE_NAME,
-    DUCKLAKE_NAME = DUCKLAKE_NAME,
-    SCHEMA = "silver",
-)
-
-
-gold_layer_manager = GoldTableManager(
-    LOCAL_DUCKDB_CONN_ID= LOCAL_DUCKDB_CONN_ID,
-    DUCKLAKE_NAME = DUCKLAKE_NAME,
-    GOLD_SCHEMA_NAME = "gold",
-)
 
 
 @dag(
@@ -53,6 +30,29 @@ gold_layer_manager = GoldTableManager(
 )
 
 def dag_duckdb():
+    bronze_layer_manager = BronzeLayerManager(
+        LOCAL_DUCKDB_CONN_ID= LOCAL_DUCKDB_CONN_ID,
+        POSTGRES_CONN_ID = POSTGRES_CONN_ID,
+        DUCKLAKE_NAME=DUCKLAKE_NAME,
+        BRONZE_SCHEMA = 'bronze',
+        BRONZE_TABLE_NAME = BRONZE_TABLE_NAME
+        
+    )
+
+
+    silver_layer_manager = SilverLayerManager(
+        LOCAL_DUCKDB_CONN_ID= LOCAL_DUCKDB_CONN_ID,
+        SILVER_TABLE_NAME = SILVER_TABLE_NAME,
+        DUCKLAKE_NAME = DUCKLAKE_NAME,
+        SCHEMA = "silver",
+    )
+
+
+    gold_layer_manager = GoldTableManager(
+        LOCAL_DUCKDB_CONN_ID= LOCAL_DUCKDB_CONN_ID,
+        DUCKLAKE_NAME = DUCKLAKE_NAME,
+        GOLD_SCHEMA_NAME = "gold",
+    )
 
     incremental_load = PythonOperator(
         task_id = 'incremental_load_srouce_to_MinIO_TEST',
