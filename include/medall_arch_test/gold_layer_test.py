@@ -33,16 +33,16 @@ class GoldTableManager(BaseLayerManager):
             raise
 
     def refresh_customer_360(self):
-        self._refresh_table("customer_360_gold_table", "views/history_gold_customer_360.sql")
+        self._refresh_table("customer_360_gold_table", "gold_queries/history_gold_customer_360.sql")
 
     def refresh_monthly_trend(self):
-        self._refresh_table("monthly_trend_gold_table", "views/history_gold_monthly_trend.sql")
+        self._refresh_table("monthly_trend_gold_table", "gold_queries/history_gold_monthly_trend.sql")
 
     def refresh_product_performance(self):
-        self._refresh_table("product_performance_gold_table", "views/history_gold_product_performance.sql")
+        self._refresh_table("product_performance_gold_table", "gold_queries/history_gold_product_performance.sql")
 
     def refresh_sales_performance(self):
-        self._refresh_table("sales_performance_gold_table", "views/history_gold_sales_performance.sql")
+        self._refresh_table("sales_performance_gold_table", "gold_queries/history_gold_sales_performance.sql")
 
     def refresh_regional_performance(self):
-        self._refresh_table("regional_performance_gold_table", "views/history_gold_regional_performance.sql")
+        self._refresh_table("regional_performance_gold_table", "gold_queries/history_gold_regional_performance.sql")
