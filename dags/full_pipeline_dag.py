@@ -3,10 +3,9 @@ from airflow.decorators import dag, task
 from airflow.utils.task_group import TaskGroup
 from airflow.providers.standard.operators.python import PythonOperator
 from datetime import datetime
-from include.medall_arch import gold_layer
-from include.medall_arch_test.bronze_layer_test import BronzeLayerManager
-from include.medall_arch_test.silver_layer_test import SilverLayerManager
-from include.medall_arch_test.gold_layer_test import GoldTableManager
+from include.medall_arch.bronze_layer import BronzeLayerManager
+from include.medall_arch.silver_layer import SilverLayerManager
+from include.medall_arch.gold_layer import GoldTableManager
 from dotenv import load_dotenv
 import os
 import logging
@@ -46,7 +45,7 @@ gold_layer_manager = GoldTableManager(
 
 
 @dag(
-    dag_id="pipeline_dag_test",
+    dag_id="full_medallion_pipeline_dag",
     start_date=datetime(2026, 1, 1),
     schedule=None,
     catchup=False,
@@ -55,45 +54,45 @@ gold_layer_manager = GoldTableManager(
 def dag_duckdb():
 
     incremental_load = PythonOperator(
-        task_id = 'incremental_load_srouce_to_MinIO_TEST',
+        task_id = 'incremental_load_srouce_to_MinIO',
         python_callable = bronze_layer_manager.increment_load_from_pg_to_minio
     )
 
     bronze_layer = PythonOperator(
-        task_id = 'bronze_Layer_Manager_TEST',
+        task_id = 'bronze_Layer_Manager',
         python_callable = bronze_layer_manager.create_or_update_bronze_table
     )
 
     silver_layer = PythonOperator(
-            task_id = 'Silver_Layer_Manager_TEST',
+            task_id = 'Silver_Layer_Manager',
             python_callable = silver_layer_manager.create_or_update_silver_table
         )
     
-    with TaskGroup(group_id='Gold_Layer_Manager_TEST') as gold_layer:
+    with TaskGroup(group_id='Gold_Layer_Manager') as gold_layer:
 
-        t_customer_360 = PythonOperator(
-            task_id='refresh_customer_360',
-            python_callable=gold_layer_manager.refresh_customer_360
+        t_customer_360 = PythonOperator( 
+            task_id='customer_kpis',
+            python_callable=gold_layer_manager.refresh_customer_kpis
         )
 
         t_monthly_trend = PythonOperator(
-            task_id='refresh_monthly_trend',
-            python_callable=gold_layer_manager.refresh_monthly_trend
+            task_id='monthly_trend',
+            python_callable=gold_layer_manager.refresh_sales_monthly_kpis
     )
 
         t_product_performance = PythonOperator(
-            task_id='refresh_product_performance',
-            python_callable=gold_layer_manager.refresh_product_performance
+            task_id='product_performance',
+            python_callable=gold_layer_manager.refresh_product_kpis
         )   
 
         t_sales_performance = PythonOperator(
-            task_id='refresh_sales_performance',
-            python_callable=gold_layer_manager.refresh_sales_performance
+            task_id='sales_performance',
+            python_callable=gold_layer_manager.refresh_sales_summary_kpis
         )
 
         t_regional_performance = PythonOperator(
-            task_id='refresh_regional_performance',
-            python_callable=gold_layer_manager.refresh_regional_performance
+            task_id='regional_performance',
+            python_callable=gold_layer_manager.refresh_region_kpis
         )
 
         t_customer_360 >> t_monthly_trend >> t_product_performance >> t_sales_performance >> t_regional_performance
