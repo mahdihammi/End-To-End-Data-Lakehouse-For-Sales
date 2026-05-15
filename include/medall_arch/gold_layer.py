@@ -9,166 +9,40 @@ import os
 
 
 class GoldTableManager(BaseLayerManager):
-    
+
     def __init__(self, LOCAL_DUCKDB_CONN_ID, GOLD_SCHEMA_NAME, DUCKLAKE_NAME):
         super().__init__(LOCAL_DUCKDB_CONN_ID)
         self.GOLD_SCHEMA_NAME = GOLD_SCHEMA_NAME
         self.DUCKLAKE_NAME = DUCKLAKE_NAME
 
-
-    def check_table_exists(self, table_name):
+    def _refresh_table(self, table_name: str, history_sql: str):
         conn = self.conn
         self.attach_ducklake()
 
         try:
-            result = conn.execute(f"""
-                SELECT COUNT(*) 
-                FROM {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name}
-            """).fetchone()
-            
-            return result[0] > 0
-        except Exception as e:
-            print(f"Error checking table existence: {e}")
-            return False
-
-    
-    def create_customer_360_table(self, table_name):
-        conn = self.conn
-        result = self.check_table_exists(table_name)
-        try:
-            if result:
-                logging.info(f'MERGING into {table_name} ...')
-                query = load_sql('gold_customer_360.sql')
-                conn.execute(query)
-
-                count = conn.fetchone()[0]
-
-                logging.info(f" {count} records affected by MERGE")
-            else:
-                logging.info(f"table {table_name} doesn't exist, recreating it ")
-                history_query = load_sql('views/history_gold_customer_360.sql')
-                history_query = f'''
-                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
-
-                        {history_query}
-                        '''
-                conn.execute(history_query)
-                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
-
+            query = load_sql(history_sql)
+            logging.info(f"Refreshing {table_name}...")
+            conn.execute(f"""
+                CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS
+                {query}
+            """)
+            logging.info(f"{table_name} refreshed successfully")
 
         except Exception as e:
-
-            logging.error(f"Error merging {table_name} table: {e}")
+            logging.error(f"Error refreshing {table_name}: {e}")
             raise
 
+    def refresh_customer_kpis(self):
+        self._refresh_table("customer_kpis", "gold_queries/history_gold_customer_360.sql")
 
-    def create_monthly_trend_table(self, table_name):
-        conn = self.conn
-        result = self.check_table_exists(table_name)
-        try:
-            if result:
-                logging.info(f'MERGING into {table_name} ...')
-                query = load_sql('gold_monthly_trend.sql')
-                conn.execute(query)
+    def refresh_sales_monthly_kpis(self):
+        self._refresh_table("sales_monthly_kpis", "gold_queries/history_gold_monthly_trend.sql")
 
-                count = conn.fetchone()[0]
+    def refresh_product_kpis(self):
+        self._refresh_table("product_kpis", "gold_queries/history_gold_product_performance.sql")
 
-                logging.info(f" {count} records affected by MERGE")
-            else:
-                logging.info(f"table {table_name} doesn't exist, recreating it ")
-                history_query = load_sql('views/history_gold_monthly_trend.sql')
-                history_query = f'''
-                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
+    def refresh_sales_summary_kpis(self):
+        self._refresh_table("sales_summary_kpis", "gold_queries/history_gold_sales_performance.sql")
 
-                        {history_query}
-                        '''
-                conn.execute(history_query)
-                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
-
-
-        except Exception as e:
-
-            logging.error(f"Error merging {table_name} table: {e}")
-            raise
-
-    def create_product_performance_table(self, table_name):
-        conn = self.conn
-        result = self.check_table_exists(table_name)
-        try:
-            if result:
-                logging.info(f'MERGING into {table_name} ...')
-                query = load_sql('gold_product_performance.sql')
-                conn.execute(query)
-
-                count = conn.fetchone()[0]
-
-                logging.info(f" {count} records affected by MERGE")
-            else:
-                logging.info(f"table {table_name} doesn't exist, recreating it ")
-                history_query = load_sql('views/history_gold_product_performance.sql')
-                history_query = f'''
-                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
-
-                        {history_query}
-                        '''
-                conn.execute(history_query)
-                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
-        except Exception as e:
-
-            logging.error(f"Error merging {table_name} table: {e}")
-            raise
-
-    def create_sales_performance_table(self, table_name):
-        conn = self.conn
-        result = self.check_table_exists(table_name)
-        try:
-            if result:
-                logging.info(f'MERGING into {table_name} ...')
-                query = load_sql('gold_sales_performance.sql')
-                conn.execute(query)
-
-                count = conn.fetchone()[0]
-
-                logging.info(f" {count} records affected by MERGE")
-            else:
-                logging.info(f"table {table_name} doesn't exist, recreating it ")
-                history_query = load_sql('views/history_gold_sales_performance.sql')
-                history_query = f'''
-                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
-
-                        {history_query}
-                        '''
-                conn.execute(history_query)
-                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
-        except Exception as e:
-
-            logging.error(f"Error merging {table_name} table: {e}")
-            raise
-
-    def create_regional_performance_table(self, table_name):
-        conn = self.conn
-        result = self.check_table_exists(table_name)
-        try:
-            if result:
-                logging.info(f'MERGING into {table_name} ...')
-                query = load_sql('gold_regional_performance.sql')
-                conn.execute(query)
-
-                count = conn.fetchone()[0]
-
-                logging.info(f" {count} records affected by MERGE")
-            else:
-                logging.info(f"table {table_name} doesn't exist, recreating it ")
-                history_query = load_sql('views/history_gold_regional_performance.sql')
-                history_query = f'''
-                        CREATE OR REPLACE TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} AS \n
-
-                        {history_query}
-                        '''
-                conn.execute(history_query)
-                logging.info(f"TABLE {self.DUCKLAKE_NAME}.{self.GOLD_SCHEMA_NAME}.{table_name} created successfully")
-        except Exception as e:
-
-            logging.error(f"Error merging {table_name} table: {e}")
-            raise
-        
+    def refresh_region_kpis(self):
+        self._refresh_table("region_kpis", "gold_queries/history_gold_regional_performance.sql")

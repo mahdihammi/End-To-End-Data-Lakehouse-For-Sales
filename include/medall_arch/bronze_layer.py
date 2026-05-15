@@ -20,15 +20,32 @@ load_dotenv()
 # CONFIG
 # ----------------------------
 
-TABLE_NAME = "orders"
 BUCKET_NAME = "lakehouse-project"
 BRONZE_PREFIX = "lakehouse-raw/sales"
 WATERMARK_VAR = "sales_last_updated_at"
 
 class BronzeLayerManager(BaseLayerManager):
-    def __init__(self, LOCAL_DUCKDB_CONN_ID, POSTGRES_CONN_ID, BRONZE_SCHEMA):
+    def __init__(self, LOCAL_DUCKDB_CONN_ID, POSTGRES_CONN_ID, DUCKLAKE_NAME, BRONZE_SCHEMA,BRONZE_TABLE_NAME):
         super().__init__(LOCAL_DUCKDB_CONN_ID)
         self.pg_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+        self.BRONZE_TABLE_NAME = BRONZE_TABLE_NAME
+        self.BRONZE_SCHEMA = BRONZE_SCHEMA
+        self.DUCKLAKE_NAME = DUCKLAKE_NAME
+    
+
+    @property
+    def full_table_name(self):
+        return f"{self.DUCKLAKE_NAME}.{self.BRONZE_SCHEMA}.{self.BRONZE_TABLE_NAME}"
+    
+    def _table_exists(self, conn) -> bool:
+        """
+        Lightweight check — just probes reachability, no full scan.
+        """
+        try:
+            conn.execute(f"SELECT 1 FROM {self.full_table_name} LIMIT 1")
+            return True
+        except Exception:
+            return False
 
     def increment_load_from_pg_to_minio(self):
 
@@ -64,36 +81,60 @@ class BronzeLayerManager(BaseLayerManager):
         print(f"Updated watermark to {new_ts}")
 
 
-    def update_or_insert_bronze_table(self):
+    def setup_bronze_table(self, conn):
         """
-        This method is for updating or inserting to the bronze table with a MERGE query : 
-        for idempotency
+        DDL step — only runs when the table is missing.
+        Creates the table and sets partitioning by (order_year, order_month).
+        No-op if the table already exists.
         """
-        
-        conn = self.conn
+        if self._table_exists(conn):
+            logging.info(f"{self.full_table_name} already exists, skipping DDL")
+            return
 
+        logging.info(f"{self.full_table_name} not found, running DDL setup")
+
+        ddl_query = load_sql('ddl/bronze_ddl.sql', full_table_name=self.full_table_name)
+
+        # DuckDB doesn't support multi-statement execute,
+        # so split on ';' and run each statement individually
+        statements = [s.strip() for s in ddl_query.split(';') if s.strip()]
+        for stmt in statements:
+            conn.execute(stmt)
+
+        logging.info(f"DDL setup complete for {self.full_table_name}")
+
+
+    def merge_bronze_table(self, conn):
+        """
+        Incremental MERGE step.
+        On a freshly created table this acts as a full initial load.
+        On an existing table it only processes new/updated records.
+        """
+        logging.info(f"Running MERGE into {self.full_table_name}")
+
+        query = load_sql('bronze_table.sql')
+        conn.execute(query)
+
+        logging.info(f"MERGE complete on {self.full_table_name}")
+
+    def create_or_update_bronze_table(self):
+        """
+        Main entry point called by the Airflow task.
+
+        Flow:
+            1. setup_silver_table  — DDL only if table is missing
+            2. merge_silver_table  — incremental MERGE always runs
+        """
+        conn = self.conn
         self.attach_ducklake()
 
-        logging.info("loading credentials successfully")
-
         try:
-            logging.info(f"Merge query : \n")
+            self.setup_bronze_table(conn)
+            self.merge_bronze_table(conn)
 
-            bronze_query = load_sql('bronze_table.sql')
-            conn.execute(bronze_query)
-            count = conn.fetchone()[0]
-
-            logging.info(f"Upsert on bronze table succeded, number of rows : {count}")
-
-        
         except Exception as e:
-
-            logging.error(f"Error merging bronze table: {e}")
+            logging.error(f"Error in bronze layer pipeline: {e}")
             raise
-        finally:
-            conn.close()
-
-
 
 
         

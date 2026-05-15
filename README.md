@@ -43,3 +43,49 @@ Contact
 =======
 
 The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+
+```
+DE-Airflow-Minio
+├─ .dockerignore
+├─ dags
+│  ├─ .airflowignore
+│  └─ full_pipeline_dag.py
+├─ docker-compose.override.yml
+├─ Dockerfile
+├─ include
+│  ├─ config
+│  │  └─ settings.py
+│  ├─ helpers
+│  │  ├─ ducklake_init.py
+│  │  ├─ helper.py
+│  │  ├─ sql_helper.py
+│  │  └─ __init__.py
+│  ├─ medall_arch
+│  │  ├─ base.py
+│  │  ├─ bronze_layer.py
+│  │  ├─ gold_layer.py
+│  │  ├─ silver_layer.py
+│  │  └─ __init__.py
+│  ├─ sql
+│  │  ├─ bronze_table.sql
+│  │  ├─ ddl
+│  │  │  ├─ bronze_ddl.sql
+│  │  │  └─ silver_ddl.sql
+│  │  ├─ gold_queries
+│  │  │  ├─ history_gold_customer_360.sql
+│  │  │  ├─ history_gold_monthly_trend.sql
+│  │  │  ├─ history_gold_product_performance.sql
+│  │  │  ├─ history_gold_regional_performance.sql
+│  │  │  └─ history_gold_sales_performance.sql
+│  │  └─ silver_transformation.sql
+│  └─ __init__.py
+├─ packages.txt
+├─ plugins
+├─ README.md
+├─ requirements.txt
+├─ start_services.sh
+└─ tests
+   └─ dags
+      └─ test_dag_example.py
+
+```
