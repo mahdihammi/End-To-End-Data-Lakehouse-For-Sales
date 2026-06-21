@@ -7,7 +7,7 @@ from airflow.decorators import dag
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
 
-from include.medall_arch.maintenance_layer import DuckLakeMaintenanceManager
+from include.medall_arch.maintenance_manager import DuckLakeMaintenanceManager
 
 load_dotenv()
 

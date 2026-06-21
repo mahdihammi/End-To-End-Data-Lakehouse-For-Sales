@@ -112,4 +112,4 @@ class DuckLakeMaintenanceManager(BaseLayerManager):
     #     );
     #     """
 
-        return self._execute_maintenance_sql("delete_orphaned_files", sql)
+        # return self._execute_maintenance_sql("delete_orphaned_files", sql)
