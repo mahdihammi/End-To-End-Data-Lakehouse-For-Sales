@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS {full_table_name} (
     row_id          UUID,
-    order_id        UUID,
+    order_id        VARCHAR(20),
     order_date      TIMESTAMP,
     ship_date       TIMESTAMP,
     ship_mode       VARCHAR(20),
