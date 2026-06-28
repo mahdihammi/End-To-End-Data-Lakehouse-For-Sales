@@ -1,10 +1,8 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from duckdb_provider.hooks.duckdb_hook import DuckDBHook
 from airflow.models import Variable
 from datetime import datetime
 import logging
 import pandas as pd
-from sqlalchemy import create_engine
 from include.helpers.helper import upload_parquet
 from include.helpers.ducklake_init import attach_ducklake_and_set_secrets
 from dotenv import load_dotenv
@@ -26,7 +24,7 @@ WATERMARK_VAR = "sales_last_updated_at"
 
 class BronzeLayerManager(BaseLayerManager):
     def __init__(self, LOCAL_DUCKDB_CONN_ID, POSTGRES_CONN_ID, DUCKLAKE_NAME, BRONZE_SCHEMA,BRONZE_TABLE_NAME):
-        super().__init__(LOCAL_DUCKDB_CONN_ID)
+        super().__init__(LOCAL_DUCKDB_CONN_ID, DUCKLAKE_NAME)
         self.pg_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
         self.BRONZE_TABLE_NAME = BRONZE_TABLE_NAME
         self.BRONZE_SCHEMA = BRONZE_SCHEMA
@@ -125,12 +123,10 @@ class BronzeLayerManager(BaseLayerManager):
             1. setup_silver_table  — DDL only if table is missing
             2. merge_silver_table  — incremental MERGE always runs
         """
-        conn = self.conn
-        self.attach_ducklake()
-
         try:
-            self.setup_bronze_table(conn)
-            self.merge_bronze_table(conn)
+            with self.ducklake_connection() as conn:
+                self.setup_bronze_table(conn)
+                self.merge_bronze_table(conn)
 
         except Exception as e:
             logging.error(f"Error in bronze layer pipeline: {e}")
