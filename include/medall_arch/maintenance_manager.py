@@ -58,13 +58,11 @@ class DuckLakeMaintenanceManager(BaseLayerManager):
         logging.info("Starting DuckLake maintenance operation: %s", operation_name)
         logging.info("DuckLake name: %s", self.DUCKLAKE_NAME)
         logging.info("Dry run: %s", self.DRY_RUN)
-
-        self.attach_ducklake()
-
         logging.info("Executing SQL:\n%s", sql)
 
-        result = self.conn.execute(sql)
-        rows = result.fetchall()
+        with self.ducklake_connection() as conn:
+            result = conn.execute(sql)
+            rows = result.fetchall()
 
         logging.info("%s returned %s rows", operation_name, len(rows))
 
