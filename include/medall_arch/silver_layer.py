@@ -1,7 +1,6 @@
 from datetime import datetime
 from json import load
 import pandas as pd
-from duckdb_provider.hooks.duckdb_hook import DuckDBHook
 from include.helpers.sql_helper import load_sql
 from include.medall_arch.base import BaseLayerManager
 from dotenv import load_dotenv
@@ -13,7 +12,7 @@ load_dotenv()
 
 class SilverLayerManager(BaseLayerManager):
     def __init__(self, LOCAL_DUCKDB_CONN_ID, SILVER_TABLE_NAME, DUCKLAKE_NAME, SCHEMA):
-        super().__init__(LOCAL_DUCKDB_CONN_ID)
+        super().__init__(LOCAL_DUCKDB_CONN_ID, DUCKLAKE_NAME)
         self.SILVER_TABLE_NAME = SILVER_TABLE_NAME
         self.SCHEMA = SCHEMA
         self.DUCKLAKE_NAME = DUCKLAKE_NAME
@@ -77,12 +76,10 @@ class SilverLayerManager(BaseLayerManager):
             1. setup_silver_table  — DDL only if table is missing
             2. merge_silver_table  — incremental MERGE always runs
         """
-        conn = self.conn
-        self.attach_ducklake()
-
         try:
-            self.setup_silver_table(conn)
-            self.merge_silver_table(conn)
+            with self.ducklake_connection() as conn:
+                self.setup_silver_table(conn)
+                self.merge_silver_table(conn)
 
         except Exception as e:
             logging.error(f"Error in silver layer pipeline: {e}")
