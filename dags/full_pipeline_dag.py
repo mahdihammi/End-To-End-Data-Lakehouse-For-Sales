@@ -19,7 +19,9 @@ SILVER_TABLE_NAME = "orders_silver"
 BRONZE_TABLE_NAME = "orders_bronze"
 DUCKLAKE_NAME = os.getenv("DUCKLAKE_NAME")
 
-
+DEFAULT_ARGS = {
+    "retries": 2,
+}
 def get_bronze_manager():
     return BronzeLayerManager(
         LOCAL_DUCKDB_CONN_ID=LOCAL_DUCKDB_CONN_ID,
@@ -84,6 +86,8 @@ def refresh_region_kpis_task():
     start_date=datetime(2026, 1, 1),
     schedule=None,
     catchup=False,
+    default_args=DEFAULT_ARGS,
+    tags=["ducklake", "medallion", "pipeline"],
 )
 def dag_duckdb():
 
