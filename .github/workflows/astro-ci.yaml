@@ -1,0 +1,43 @@
+name: Astro CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astro-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-astro-project:
+    name: Parse and test DAGs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install Astro CLI
+        uses: astronomer/setup-astro-cli@v0.0.1
+
+      - name: Show Astro CLI version
+        run: astro version
+
+      - name: Compile Python files
+        run: python -m compileall -q dags include tests
+
+      - name: Parse DAGs
+        run: astro dev parse
+
+      - name: Run pytest suite
+        run: astro dev pytest

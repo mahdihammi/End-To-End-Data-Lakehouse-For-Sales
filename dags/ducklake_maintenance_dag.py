@@ -69,12 +69,16 @@ def delete_orphaned_files_task():
         older_than=DELETE_ORPHANED_FILES_OLDER_THAN,
     )
 
+DEFAULT_ARGS = {
+    "retries": 2,
+}
 
 @dag(
     dag_id="ducklake_maintenance_dag",
     start_date=datetime(2026, 1, 1),
     schedule=DUCKLAKE_MAINTENANCE_SCHEDULE,
     catchup=False,
+    default_args=DEFAULT_ARGS,
     tags=["ducklake", "maintenance"],
 )
 def ducklake_maintenance_dag():
