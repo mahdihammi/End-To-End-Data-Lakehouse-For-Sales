@@ -50,6 +50,38 @@ services:
     networks:
       - airflow
 
+  dashboard:
+    image: de-airflow-minio:local
+    container_name: astro-streamlit
+
+    command:
+      - python
+      - -m
+      - streamlit
+      - run
+      - /usr/local/airflow/include/dashboard/app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+
+    ports:
+      - "8501:8501"
+
+    env_file:
+      - .env
+
+    environment:
+      PYTHONPATH: /usr/local/airflow
+      MINIO_ENDPOINT: minio:9000
+
+    volumes:
+      - ./include:/usr/local/airflow/include
+
+    depends_on:
+      - minio
+
+    networks:
+      - airflow
+
 volumes:
   minio_data:
   duckdb_data:
